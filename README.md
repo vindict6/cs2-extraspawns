@@ -41,7 +41,7 @@ Visually, each original spawn gets up to four new neighbors in a tight cross pat
 
 The new player spawns will appear right on top of the existing ones when beginning a round.
 
-***The mp_solid_teammates cvar is set to 0 for ten seconds, and then back to 2 at the beginning of every round.***
+***The mp_solid_teammates cvar is set to 0 for three seconds, and then back to 2 at the beginning of every round.***
 
 
 
