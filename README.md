@@ -80,7 +80,7 @@ Once spawns are successfully generated, generation timers stop forever (until ne
 
 👤 Author
 
-Vindict6 (BONE) - Version: 1.2.0
+Vindict6 (BONE) - Version: 2.0.0
 
 **DESIGNED FOR ONLYZAPS.GG**
 
