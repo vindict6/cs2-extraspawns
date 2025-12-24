@@ -1,13 +1,12 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
+using CounterStrikeSharp.API.Modules.Cvars;
+using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
-using CounterStrikeSharp.API.Modules.Events;    // Event types (EventRoundStart)
-using CounterStrikeSharp.API.Modules.Cvars;     // ConVar
+using System;
 using System.Linq;
-
-// Alias the CS# Timer so we don’t conflict with System.Threading.Timer
 using CSTimer = CounterStrikeSharp.API.Modules.Timers.Timer;
 
 namespace ExtraSpawns
@@ -16,8 +15,8 @@ namespace ExtraSpawns
     public class ExtraSpawns : BasePlugin
     {
         public override string ModuleName => "Extra Spawns";
-        public override string ModuleVersion => "1.2.1";
-        public override string ModuleAuthor => "Vindict6 (updated)";
+        public override string ModuleVersion => "2.0.0"; // 3 Second mp_solid_teammates switch from 0 to 2.
+        public override string ModuleAuthor => "VinSix";
 
         private const int MaxSpawnsPerTeam = 32;
         private static readonly Vector[] Offsets =
@@ -31,29 +30,23 @@ namespace ExtraSpawns
         private bool _spawnsCreated = false;
         private CSTimer? _checkTimer;
         private CSTimer? _solidTeammatesTimer;
-        private int? _previousSolidTeammates; // store original value if available
+        // _previousSolidTeammates field removed as it is no longer used
 
         public override void Load(bool hotReload)
         {
             RegisterListener<Listeners.OnMapStart>(OnMapStart);
-
-            // Register a proper round-start handler
             RegisterEventHandler<EventRoundStart>(OnRoundStart);
 
-            // Console command to manually generate extra spawns
-            AddCommand("css_spawns",
-                "Generate extra spawns for T and CT",
-                (player, info) =>
-                {
-                    AddExtraSpawns("info_player_terrorist");
-                    AddExtraSpawns("info_player_counterterrorist");
-                    info.ReplyToCommand("[ExtraSpawns] Extra spawns generated.");
-                });
+            AddCommand("css_spawns", "Generate extra spawns for T and CT", (player, info) =>
+            {
+                AddExtraSpawns("info_player_terrorist");
+                AddExtraSpawns("info_player_counterterrorist");
+                info.ReplyToCommand("[ExtraSpawns] Extra spawns generated.");
+            });
         }
 
         public override void Unload(bool hotReload)
         {
-            // Clean up timers
             _checkTimer?.Kill();
             _checkTimer = null;
 
@@ -65,7 +58,6 @@ namespace ExtraSpawns
         {
             _spawnsCreated = false;
 
-            // Start repeating check every 5 seconds to generate extra spawns
             _checkTimer = AddTimer(5.0f, () =>
             {
                 if (_spawnsCreated)
@@ -94,20 +86,15 @@ namespace ExtraSpawns
             _solidTeammatesTimer?.Kill();
             _solidTeammatesTimer = null;
 
-            // Attempt to read current value (if ConVar exists) so we can restore it later.
-            var cvar = ConVar.Find("mp_solid_teammates");
-            _previousSolidTeammates = cvar?.GetPrimitiveValue<int>() ?? 2;
-
-            // Disable teammate collisions at round start
+            // 1. Force collisions OFF immediately
             Server.ExecuteCommand("mp_solid_teammates 0");
             Server.PrintToConsole("[ExtraSpawns] mp_solid_teammates set to 0 at round start.");
 
-            // Restore after 10 seconds (one-shot). Stop if map changes.
-            _solidTeammatesTimer = AddTimer(10.0f, () =>
+            // 2. Restore collisions to '2' after 3 seconds
+            _solidTeammatesTimer = AddTimer(3.0f, () =>
             {
-                int restore = _previousSolidTeammates ?? 2;
-                Server.ExecuteCommand($"mp_solid_teammates {restore}");
-                Server.PrintToConsole($"[ExtraSpawns] mp_solid_teammates restored to {restore}.");
+                Server.ExecuteCommand("mp_solid_teammates 2");
+                Server.PrintToConsole("[ExtraSpawns] mp_solid_teammates restored to 2.");
                 _solidTeammatesTimer = null;
             }, TimerFlags.STOP_ON_MAPCHANGE);
 
